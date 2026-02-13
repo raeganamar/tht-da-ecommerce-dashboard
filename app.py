@@ -63,17 +63,19 @@ elif "order_item_id" in df_filtered.columns:
 else: 
     total_orders = len(df_filtered)
 
-# GLOBAL Repeat & Return (NOT affected by country filter)
+# ===== ORDER-LEVEL DATA (Match Power BI Logic) =====
+order_level = df.drop_duplicates(subset=["order_id"])
 
 repeat_rate = (
-    (df["customer_type"] == "Repeat").sum()
-    / len(df)
+    (order_level["customer_type"] == "Repeat").sum()
+    / len(order_level)
 ) * 100
 
 return_rate = (
-    (df["order_status"] == "Returned").sum()
-    / len(df)
+    (order_level["order_status"] == "Returned").sum()
+    / len(order_level)
 ) * 100
+
 
 # =============================
 # HEADER
@@ -166,5 +168,6 @@ st.markdown(
 - Revenue growth must be evaluated alongside return impact and customer mix.
 """
 )
+
 
 
