@@ -63,15 +63,16 @@ elif "order_item_id" in df_filtered.columns:
 else: 
     total_orders = len(df_filtered)
 
+# GLOBAL Repeat & Return (NOT affected by country filter)
+
 repeat_rate = (
-    df_filtered["customer_type"]
-    .value_counts(normalize=True)
-    .get("Repeat", 0)
+    (df["customer_type"] == "Repeat").sum()
+    / len(df)
 ) * 100
 
 return_rate = (
-    (df_filtered["order_status"] == "Returned").sum()
-    / len(df_filtered)
+    (df["order_status"] == "Returned").sum()
+    / len(df)
 ) * 100
 
 # =============================
@@ -165,4 +166,5 @@ st.markdown(
 - Revenue growth must be evaluated alongside return impact and customer mix.
 """
 )
+
 
