@@ -26,6 +26,7 @@ df = load_data()
 # =============================
 required_cols = [
     "order_id",
+    "user_id",
     "net_revenue",
     "gross_revenue",
     "country",
@@ -63,16 +64,19 @@ elif "order_item_id" in df_filtered.columns:
 else: 
     total_orders = len(df_filtered)
 
-# ===== DISTINCT ORDER COUNT (Match Power BI EXACTLY) =====
+# ===== CUSTOMER-LEVEL CALCULATION (MATCH POWER BI DAX) =====
 
-total_unique_orders = df["order_id"].nunique()
+# Total unique customers
+total_customers = df["user_id"].nunique()
 
-repeat_orders = df[df["customer_type"] == "Repeat"]["order_id"].nunique()
+# Count orders per user
+orders_per_user = df.groupby("user_id")["order_id"].nunique()
 
-returned_orders = df[df["order_status"] == "Returned"]["order_id"].nunique()
+# Users with more than 1 order
+repeat_customers = (orders_per_user > 1).sum()
 
-repeat_rate = (repeat_orders / total_unique_orders) * 100
-return_rate = (returned_orders / total_unique_orders) * 100
+# Repeat customer rate
+repeat_rate = (repeat_customers / total_customers) * 100
 
 
 
@@ -167,6 +171,7 @@ st.markdown(
 - Revenue growth must be evaluated alongside return impact and customer mix.
 """
 )
+
 
 
 
