@@ -56,7 +56,12 @@ df_filtered = df[df["country"].isin(selected_countries)]
 # =============================
 total_net_revenue = df_filtered["net_revenue"].sum()
 total_gross_revenue = df_filtered["gross_revenue"].sum()
-total_orders = df_filtered["order_id"].nunique()
+if "order_id" in df_filtered.columns:
+    total_orders = df_filtered["order_id"].nunique()
+elif "order_item_id" in df_filtered.columns:
+    total_orders = df_filtered["order_item_id"].nunique() 
+else: 
+    total_orders = len(df_filtered)
 
 repeat_rate = (
     df_filtered["customer_type"]
@@ -160,3 +165,4 @@ st.markdown(
 - Revenue growth must be evaluated alongside return impact and customer mix.
 """
 )
+
