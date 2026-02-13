@@ -63,18 +63,17 @@ elif "order_item_id" in df_filtered.columns:
 else: 
     total_orders = len(df_filtered)
 
-# ===== ORDER-LEVEL DATA (Match Power BI Logic) =====
-order_level = df.drop_duplicates(subset=["order_id"])
+# ===== DISTINCT ORDER COUNT (Match Power BI EXACTLY) =====
 
-repeat_rate = (
-    (order_level["customer_type"] == "Repeat").sum()
-    / len(order_level)
-) * 100
+total_unique_orders = df["order_id"].nunique()
 
-return_rate = (
-    (order_level["order_status"] == "Returned").sum()
-    / len(order_level)
-) * 100
+repeat_orders = df[df["customer_type"] == "Repeat"]["order_id"].nunique()
+
+returned_orders = df[df["order_status"] == "Returned"]["order_id"].nunique()
+
+repeat_rate = (repeat_orders / total_unique_orders) * 100
+return_rate = (returned_orders / total_unique_orders) * 100
+
 
 
 # =============================
@@ -168,6 +167,7 @@ st.markdown(
 - Revenue growth must be evaluated alongside return impact and customer mix.
 """
 )
+
 
 
 
