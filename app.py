@@ -15,28 +15,36 @@ st.set_page_config(
 # =============================
 @st.cache_data
 def load_data():
-    df = pd.read_csv("tht_streamlit_small.csv", sep=",")
-    df.columns = df.columns.str.strip()  # Fix hidden spaces
+    df = pd.read_csv("tht_streamlit_small.csv")
+    df.columns = df.columns.str.strip()
     return df
 
 df = load_data()
 
 # =============================
-# SAFETY CHECK (Avoid Cloud Error)
+# AUTO-DETECT IMPORTANT COLUMNS
 # =============================
+order_col = None
+user_col = None
+
+if "order_id" in df.columns:
+    order_col = "order_id"
+elif "order_item_id" in df.columns:
+    order_col = "order_item_id"
+
+if "user_id" in df.columns:
+    user_col = "user_id"
+
 required_cols = [
-    "order_id",
-    "user_id",
     "net_revenue",
     "gross_revenue",
     "country",
-    "order_status",
-    "customer_type"
+    "order_status"
 ]
 
 for col in required_cols:
     if col not in df.columns:
-        st.error(f"Missing column in dataset: {col}")
+        st.error(f"Missing required column: {col}")
         st.stop()
 
 # =============================
@@ -53,31 +61,53 @@ selected_countries = st.sidebar.multiselect(
 df_filtered = df[df["country"].isin(selected_countries)]
 
 # =============================
-# METRICS (MATCH POWER BI)
+# KPI CALCULATIONS
 # =============================
+
+# Revenue (affected by filter)
 total_net_revenue = df_filtered["net_revenue"].sum()
-total_gross_revenue = df_filtered["gross_revenue"].sum()
-if "order_id" in df_filtered.columns:
-    total_orders = df_filtered["order_id"].nunique()
-elif "order_item_id" in df_filtered.columns:
-    total_orders = df_filtered["order_item_id"].nunique() 
-else: 
+
+if order_col:
+    total_orders = df_filtered[order_col].nunique()
+else:
     total_orders = len(df_filtered)
 
-# ===== CUSTOMER-LEVEL CALCULATION (MATCH POWER BI DAX) =====
+# =============================
+# GLOBAL METRICS (NOT FILTERED)
+# =============================
 
-# Total unique customers
-total_customers = df["user_id"].nunique()
+# ----- REPEAT CUSTOMER RATE (MATCH POWER BI) -----
+# Distinct users with >1 distinct order
 
-# Count orders per user
-orders_per_user = df.groupby("user_id")["order_id"].nunique()
+if user_col and order_col:
 
-# Users with more than 1 order
-repeat_customers = (orders_per_user > 1).sum()
+    user_order_counts = (
+        df.groupby(user_col)[order_col]
+        .nunique()
+    )
 
-# Repeat customer rate
-repeat_rate = (repeat_customers / total_customers) * 100
+    repeat_customers = (user_order_counts > 1).sum()
+    total_customers = user_order_counts.count()
 
+    repeat_rate = (repeat_customers / total_customers) * 100
+
+else:
+    repeat_rate = 0
+
+
+# ----- RETURN RATE (ORDER LEVEL) -----
+
+if order_col:
+    order_level = df.drop_duplicates(subset=[order_col])
+    return_rate = (
+        (order_level["order_status"] == "Returned").sum()
+        / len(order_level)
+    ) * 100
+else:
+    return_rate = (
+        (df["order_status"] == "Returned").sum()
+        / len(df)
+    ) * 100
 
 
 # =============================
@@ -165,14 +195,9 @@ st.markdown(
 """
 ### 🔎 Executive Insight
 
-- Revenue is concentrated in specific countries (China & US dominate).
-- Repeat customers contribute ~37%, indicating moderate retention.
-- Return rate remains a risk factor impacting revenue quality.
-- Revenue growth must be evaluated alongside return impact and customer mix.
+- Revenue is concentrated in key markets.
+- Repeat customers represent a meaningful portion of total customers.
+- Return rate directly impacts revenue quality.
+- Growth should be evaluated alongside customer retention and return control.
 """
 )
-
-
-
-
-
